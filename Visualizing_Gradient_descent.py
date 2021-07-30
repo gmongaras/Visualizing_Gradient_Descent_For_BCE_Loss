@@ -133,7 +133,7 @@ class NeuralNetwork():
 def binaryCrossEntropy(yhat, y):
     yhat = np.array(yhat)
     y = np.array(y)
-    return np.sum(-1*(y*np.log(yhat) + (1-y)*np.log(1-yhat)))
+    return (1/y.shape[1])*(np.sum(-1*(y*np.log(yhat) + (1-y)*np.log(1-yhat))))
 
 
 
