@@ -24,12 +24,12 @@ class FullyConnected:
         # Initialize the weights to random values.
         # The matrix will be of size: [self.numNodes, self.numInputs]
         # The values will be between -1 and 1.
-        self.weights = np.random.uniform(-1, 1, (self.numNodes, self.numInputs))*0.01
+        self.weights = np.random.normal(-1, 1, (self.numNodes, self.numInputs))
 
         # Initialize the biases to random values
         # The vector will be of size [self.numNodes] as
         # there is 1 bias per node. The value will be between -1 and 1.
-        self.biases = np.random.uniform(-1, 1, self.numNodes)*0.01
+        self.biases = np.random.normal(-1, 1, self.numNodes)
     
     # Given a set of inputs, returns the value of the feed forward method
     # Parameters:
@@ -57,7 +57,7 @@ class FullyConnected:
         # Return the output and z value to be stored in the cache.
         if self.activation == "relu":
             #return np.maximum(z.T, 0), z.T
-            return np.where(z.T > 0, z.T, z.T*0.01), z.T
+            return np.where(z.T > 0, z.T, z.T*0.05), z.T
         elif self.activation == "softmax":
             return special.softmax(z, axis=1), z.T
         elif self.activation == "sigmoid":
@@ -131,9 +131,18 @@ class NeuralNetwork():
 # - yhat: Predictions from the neural network
 # - y: The values that the predictions should be
 def binaryCrossEntropy(yhat, y):
+    # Make sure the inputs are numpy arrays
     yhat = np.array(yhat)
     y = np.array(y)
-    return (1/y.shape[1])*(np.sum(-1*(y*np.log(yhat) + (1-y)*np.log(1-yhat))))
+    
+    # Add a very small values to values of 1 to stop the loss from being nan.
+    np.where(yhat==1, yhat+0.0000001, yhat)
+
+    # Return the loss
+    if np.isnan(-1*(1/y.shape[1])*(np.sum(y*np.log(yhat) + (1-y)*np.log(1-yhat)))):
+        print(y*np.log(yhat))
+        print(y*np.log(1-yhat))
+    return -1*(1/y.shape[1])*(np.sum(y*np.log(yhat) + (1-y)*np.log(1-yhat)))
 
 
 
@@ -141,7 +150,7 @@ def binaryCrossEntropy(yhat, y):
 
 def main():
     # The learning rate used to update the weights and biases
-    alpha = 0.1
+    alpha = 0.05
 
     # Get the data from a dataset
     data = sklearn.datasets.make_moons(noise=0.3, n_samples=100, shuffle=False, random_state=0)
@@ -157,7 +166,7 @@ def main():
     # - 16 nodes per layer
     # - A relu activation function for each hidden layer
     # - A sigmoid activation function for the output layer
-    model = NeuralNetwork(2, 5, [16, 16, 16, 16, 1], ["relu", "relu", "relu", "relu", "sigmoid"])
+    model = NeuralNetwork(2, 3, [16, 16, 1], ["relu", "relu", "sigmoid"])
 
     # For 100 iterations, feed forward the training data through the network
     # and update the weights using the gradients by going backwards.
@@ -186,7 +195,7 @@ def main():
 
         # Starting at the loss function, calculate the partial derivatve
         # of the loss function
-        cache["da5"] = -1.*(y_train/cache["a" + str(model.numLayers-1)])
+        cache["da" + str(model.numLayers)] = (-y_train/cache["a" + str(model.numLayers-1)])+(1-y_train/1-cache["a" + str(model.numLayers-1)])
 
         # Iterate through each layer starting with the last one
         # and calculate the partial derivatives needed to find 
@@ -200,7 +209,7 @@ def main():
             # of the layer before the activation function (zi) is less than or
             # equal to 0. 
             if model.layers[i].activation == "relu":
-                cache["dz" + str(i)] = np.where(cache["z" + str(i)] <= 0, -0.01, 1.)#(1. if cache["z" + str(i)] > 0 else 0.)
+                cache["dz" + str(i)] = np.where(cache["z" + str(i)] <= 0, -0.05, 1.)#(1. if cache["z" + str(i)] > 0 else 0.)
             # If the activation function is sigmoid, then the derivative
             # is given by the following formula:
             # (phat(1-phat))
@@ -216,21 +225,26 @@ def main():
 
 
             # Multiply the current dz value by the activation derivative
-            # from the proceeding layer.
-            cache["dz" + str(i)] *= cache["da" + str(i+1)]
+            # from the proceeding layer if the layer is the last layer
+            if i == model.numLayers-1:
+                cache["dz" + str(i)] = cache["a" + str(i)] - y_train
+            # If the layer is a hidden layer, multiply the current dz value by
+            # the proceeding layer's weight and bias derivatives to continue the
+            # chain rule.
+            else:
+                cache["dz" + str(i)] = cache["dweights" + str(i+1)] * cache["dbiases" + str(i+1)] * cache["dz" + str(i)]
 
 
 
-
-            # Now, calculate the derivatives for the weights, biases, and inputs
+            # Now, calculate the derivatives for the weights, and biaseses.
             # Rememebr to multiply all of these values by the z value derivative
             # to complete the chain rule.
 
             # Get the derivative of the weights. The derivative of the weights
             # is the corresponding input values (a(i-1)) dot the previous derivative values. 
             # In this case, the previous derivative values are dz:
-            # dweights = a*dz
-            cache["dweights" + str(i)] = np.array([np.dot(x, cache["dz" + str(i)].T) for x in cache["a" + str(i-1)]])
+            # dweights = a(i-1)*dz
+            cache["dweights" + str(i)] = np.sum(np.array([x * cache["dz" + str(i)] for x in cache["a" + str(i-1)]]), axis=-2)
 
             # The derivative of a bias is 1, since the bias is constant, dot
             # the previous derivative values.
@@ -239,19 +253,17 @@ def main():
             cache["dbiases" + str(i)] = 1*cache["dz" + str(i)]
 
 
+            # Correct the weights and biases by changing all nan values to 0 and
+            # Keeping the values between -1 and 1 to avoid exploding gradients
+            cache["dweights" + str(i)]  = np.nan_to_num(cache["dweights" + str(i)], nan=0.0)
+            cache["dbiases" + str(i)]  = np.nan_to_num(cache["dbiases" + str(i)], nan=0.0)
+            cache["dweights" + str(i)] = np.clip(cache["dweights" + str(i)], -1, 1)
+            cache["dbiases" + str(i)] = np.clip(cache["dbiases" + str(i)], -1, 1)
+
+
             # Update the weights and biases for this layer
-            model.layers[i].weights -= alpha*cache["dweights" + str(i)].T
+            model.layers[i].weights -= alpha*np.sum(cache["dweights" + str(i)], axis=-1, keepdims=True).T
             model.layers[i].biases -= alpha*np.sum(cache["dbiases" + str(i)], axis=-1)
-
-
-
-            # Get the derivative of the preceeding activation values. The
-            # derivative of the preceeding values (or the inputs into this layer)
-            # is it's corresponding weight values dot the previous derivative values.
-            # In this case, the previous derivative values are dz:
-            # da = w.T*dz
-            cache["da" + str(i)] = np.sum(np.dot(model.layers[i].weights.T, cache["dz" + str(i)]), axis=-1, keepdims=True)
-
 
 
         ###################
@@ -262,6 +274,13 @@ def main():
         plt.scatter(X_train[:,0], X_train[:,1], c=predictions,
                  cmap=ListedColormap(['#FF0000', '#0000FF']))
         plt.show()
+    
+    plt.scatter(X_train[:,0], X_train[:,1], c=y_train,
+                cmap=ListedColormap(['#FF0000', '#0000FF']))
+    plt.show()
+    plt.scatter(X_train[:,0], X_train[:,1], c=predictions,
+                cmap=ListedColormap(['#FF0000', '#0000FF']))
+    plt.show()
 
 
 
