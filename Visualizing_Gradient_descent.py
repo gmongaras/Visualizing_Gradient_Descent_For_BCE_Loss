@@ -97,7 +97,7 @@ class NeuralNetwork():
     #   cache - A dictionary containing cached values from each layer in the
     #           feedforward method.
     def forward(self, inputs):
-        # This chache holds calculated values from each layer
+        # This cache holds calculated values from each layer
         # to be used in backpropagation
         cache = dict()
 
@@ -135,14 +135,20 @@ def binaryCrossEntropy(yhat, y):
     yhat = np.array(yhat)
     y = np.array(y)
     
-    # Add a very small values to values of 1 to stop the loss from being nan.
-    np.where(yhat==1, yhat+0.0000001, yhat)
+    # Compute the reversed values
+    yhat_rev = 1-yhat
+    
+    # Change values of 1 which yaht and 0 within yhat_rev slightly to avoid
+    # the loss from becoming nan or infinity.
+    yhat = np.where(yhat==1, yhat-0.0000001, yhat)
+    yhat_rev = np.where(yhat_rev==0, yhat_rev+0.0000001, yhat_rev)
+
+    # Compute the log terms
+    log1 = y*np.log(yhat)
+    log2 = (1-y)*np.log(yhat_rev)
 
     # Return the loss
-    if np.isnan(-1*(1/y.shape[1])*(np.sum(y*np.log(yhat) + (1-y)*np.log(1-yhat)))):
-        print(y*np.log(yhat))
-        print(y*np.log(1-yhat))
-    return -1*(1/y.shape[1])*(np.sum(y*np.log(yhat) + (1-y)*np.log(1-yhat)))
+    return -1*(1/y.shape[1])*(np.sum(log1 + log2))
 
 
 
@@ -150,19 +156,19 @@ def binaryCrossEntropy(yhat, y):
 
 def main():
     # The learning rate used to update the weights and biases
-    alpha = 0.05
+    alpha = 0.01
 
     # Get the data from a dataset
-    data = sklearn.datasets.make_moons(noise=0.3, n_samples=100, shuffle=False, random_state=0)
+    data = sklearn.datasets.make_moons(noise=0.2, n_samples=200, shuffle=False, random_state=0)
     
     # Split the data
     X_train, X_test, y_train, y_test = train_test_split(data[0], data[1])
 
 
     # Create the neural network with:
-    # - numInputs of size 2 (an x and y value)
-    # - an output layer of size 1 (for the classification)
-    # - 4 hidden layers
+    # - numInputs of size 2 (an x1 and x2 value)
+    # - an output layer of size 1 (for the classification (yhat))
+    # - 2 hidden layers
     # - 16 nodes per layer
     # - A relu activation function for each hidden layer
     # - A sigmoid activation function for the output layer
@@ -170,7 +176,7 @@ def main():
 
     # For 100 iterations, feed forward the training data through the network
     # and update the weights using the gradients by going backwards.
-    for i in range(0, 100):
+    for i in range(0, 20000):
         #####################
         #Forward Propagation#
         #####################
@@ -195,7 +201,7 @@ def main():
 
         # Starting at the loss function, calculate the partial derivatve
         # of the loss function
-        cache["da" + str(model.numLayers)] = (-y_train/cache["a" + str(model.numLayers-1)])+(1-y_train/1-cache["a" + str(model.numLayers-1)])
+        cache["da" + str(model.numLayers)] = (-y_train/cache["a" + str(model.numLayers-1)])+((1-y_train)/(1-cache["a" + str(model.numLayers-1)]))
 
         # Iterate through each layer starting with the last one
         # and calculate the partial derivatives needed to find 
@@ -227,12 +233,17 @@ def main():
             # Multiply the current dz value by the activation derivative
             # from the proceeding layer if the layer is the last layer
             if i == model.numLayers-1:
-                cache["dz" + str(i)] = cache["a" + str(i)] - y_train
+                cache["dz" + str(i)] = cache["da" + str(i+1)]*cache["dz" + str(i)]
             # If the layer is a hidden layer, multiply the current dz value by
             # the proceeding layer's weight and bias derivatives to continue the
             # chain rule.
             else:
-                cache["dz" + str(i)] = cache["dweights" + str(i+1)] * cache["dbiases" + str(i+1)] * cache["dz" + str(i)]
+                # Change the shape of dz to be (numNodes(i), 1, m)
+                cache["dz" + str(i)] = cache["dz" + str(i)].reshape(model.layers[i].numNodes, 1, X_train.shape[0])
+                # Update dz to continue the chain rule.
+                cache["dz" + str(i)] = np.sum(cache["dweights" + str(i+1)], axis=-2).reshape(cache["dz" + str(i)].shape) * cache["dbiases" + str(i+1)] * cache["dz" + str(i)]
+
+
 
 
 
@@ -240,17 +251,24 @@ def main():
             # Rememebr to multiply all of these values by the z value derivative
             # to complete the chain rule.
 
-            # Get the derivative of the weights. The derivative of the weights
-            # is the corresponding input values (a(i-1)) dot the previous derivative values. 
-            # In this case, the previous derivative values are dz:
-            # dweights = a(i-1)*dz
-            cache["dweights" + str(i)] = np.sum(np.array([x * cache["dz" + str(i)] for x in cache["a" + str(i-1)]]), axis=-2)
 
-            # The derivative of a bias is 1, since the bias is constant, dot
+            # Update the shapes of a and dz before taking the derivatives. The
+            # value do not change, this just changes the shape of
+            # the tensor.
+            cache["a" + str(i-1)] = cache["a" + str(i-1)].reshape(cache["a" + str(i-1)].shape[0], 1, X_train.shape[0])
+            cache["dz" + str(i)] = cache["dz" + str(i)].reshape(model.layers[i].numNodes, 1, X_train.shape[0])
+
+            # Get the derivative of the weights. The derivative of the weights
+            # is the corresponding input values (a(i-1))*(1/m) dot the previous 
+            # derivative values. In this case, the previous derivative values are dz:
+            # dweights = a(i-1)*dz
+            cache["dweights" + str(i)] = (1/X_train.shape[0])*np.array([x * cache["dz" + str(i)] for x in cache["a" + str(i-1)]]).reshape(cache["a" + str(i-1)].shape[0], cache["dz" + str(i)].shape[0], X_train.shape[0])
+
+            # The derivative of a bias is 1*(1/m), since the bias is constant, dot
             # the previous derivative values.
             # In this case, the previous derivative values are dz:
             # dbiases = 1*dz
-            cache["dbiases" + str(i)] = 1*cache["dz" + str(i)]
+            cache["dbiases" + str(i)] = 1*(1/X_train.shape[0])*cache["dz" + str(i)]
 
 
             # Correct the weights and biases by changing all nan values to 0 and
@@ -262,8 +280,8 @@ def main():
 
 
             # Update the weights and biases for this layer
-            model.layers[i].weights -= alpha*np.sum(cache["dweights" + str(i)], axis=-1, keepdims=True).T
-            model.layers[i].biases -= alpha*np.sum(cache["dbiases" + str(i)], axis=-1)
+            model.layers[i].weights -= alpha*np.sum(cache["dweights" + str(i)], axis=-1).T
+            model.layers[i].biases -= alpha*np.sum(np.sum(cache["dbiases" + str(i)], axis=-1), axis=-1)
 
 
         ###################
@@ -271,9 +289,9 @@ def main():
         ###################
 
         # Plot the data
-        plt.scatter(X_train[:,0], X_train[:,1], c=predictions,
-                 cmap=ListedColormap(['#FF0000', '#0000FF']))
-        plt.show()
+        #plt.scatter(X_train[:,0], X_train[:,1], c=predictions,
+        #         cmap=ListedColormap(['#FF0000', '#0000FF']))
+        #plt.show()
     
     plt.scatter(X_train[:,0], X_train[:,1], c=y_train,
                 cmap=ListedColormap(['#FF0000', '#0000FF']))
@@ -282,6 +300,23 @@ def main():
                 cmap=ListedColormap(['#FF0000', '#0000FF']))
     plt.show()
 
+    # Make the final predictions on the test set.
+    final_preds, _ = model.forward(X_test.T)
+
+    # Print the loss value for the test set
+    print("Final loss: " + str(binaryCrossEntropy(final_preds, np.array([y_test]))))
+
+    # Graph the test data
+    plt.scatter(X_test[:,0], X_test[:,1], c=y_test,
+                cmap=ListedColormap(['#FF0000', '#0000FF']))
+    plt.show()
+    plt.scatter(X_test[:,0], X_test[:,1], c=final_preds,
+                cmap=ListedColormap(['#FF0000', '#0000FF']))
+    plt.show()
 
 
+
+
+
+# Call the main function
 main()
