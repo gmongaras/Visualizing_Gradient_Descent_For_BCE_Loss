@@ -5,8 +5,8 @@ Using only numpy in Python, a neural network with a forward and backward method 
 
 # Example Graphics
 While the network is trained, graphics are displayed to show the current model's loss on the training set as well as predictions vs. real data points on the training set (Graphic 1). When the model is finished training, more graphics appear to show the model's loss on the test set as well as predictions vs. real data points on the test set (Graphic 2).
-![Alt text](https://raw.github.com/gmongaras/Visualizing_Gradient_Descent_With_BCE_Loss/main/imgs/Graphic 1.PNG?raw=true "Graphic 1")
-![Alt text](https://raw.github.com/gmongaras/Visualizing_Gradient_Descent_With_BCE_Loss/main/imgs/Graphic 2.PNG?raw=true "Graphic 2")
+![Settings Window](https://raw.github.com/gmongaras/Visualizing_Gradient_Descent_With_BCE_Loss/main/imgs/Graphic 1.PNG?raw=true "Graphic 1")
+![Settings Window](https://raw.github.com/gmongaras/Visualizing_Gradient_Descent_With_BCE_Loss/main/imgs/Graphic 2.PNG?raw=true "Graphic 2")
 
 
 
