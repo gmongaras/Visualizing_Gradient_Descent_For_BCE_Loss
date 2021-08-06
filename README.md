@@ -19,4 +19,4 @@ Here are the necessary libraries to run the code:
 - sklearn
 - matplotlib
 
-Note: I tested the code using Python 3.8.
+Note: I tested the code using Python 3.8.10
