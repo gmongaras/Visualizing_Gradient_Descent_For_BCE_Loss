@@ -10,6 +10,8 @@ While the network is trained, graphics are displayed to show the current model's
 
 ![Alt text](./imgs/Graphic2.PNG?raw=true "Graphic 2")
 
+![Alt text](./imgs/Best Loss.PNG?raw=true "Graphic 3")
+
 
 
 # Requirements To Run Code
