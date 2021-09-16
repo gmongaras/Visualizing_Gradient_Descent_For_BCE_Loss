@@ -262,7 +262,7 @@ def binaryCrossEntropy(yhat, y):
 
 def main():
     # The learning rate used to update the weights and biases
-    alpha = 0.01
+    alpha = 0.25
 
     # Get the data from a dataset
     data = sklearn.datasets.make_moons(noise=0.2, n_samples=200, shuffle=False, random_state=0)
@@ -277,7 +277,7 @@ def main():
     # - 2 hidden layers
     # - 16 nodes per layer
     # - A relu activation function for each hidden layer
-    # - A sigmoid activation function for the output layer
+    # - A sigmoid activation functin for the output layer
     model = NeuralNetwork(2, 3, [16, 16, 1], ["relu", "relu", "sigmoid"])
 
     
