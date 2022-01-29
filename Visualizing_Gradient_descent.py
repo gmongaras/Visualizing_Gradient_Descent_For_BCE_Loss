@@ -68,7 +68,7 @@ class FullyConnected:
         if self.activation == "relu":
             return np.where(z > 0, z, z*0.05), z
         elif self.activation == "softmax":
-            return special.softmax(z.T, axis=1), z
+            return special.softmax(z, axis=-1), z
         elif self.activation == "sigmoid":
             return 1/(1 + np.exp(-1*z)), z
         else:
