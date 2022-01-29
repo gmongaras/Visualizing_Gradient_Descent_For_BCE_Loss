@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.colors import ListedColormap
-from scipy import special
 import matplotlib.gridspec as gridspec
 
 
@@ -67,8 +66,6 @@ class FullyConnected:
         # Return the output and z value to be stored in the cache.
         if self.activation == "relu":
             return np.where(z > 0, z, z*0.05), z
-        elif self.activation == "softmax":
-            return special.softmax(z, axis=-1), z
         elif self.activation == "sigmoid":
             return 1/(1 + np.exp(-1*z)), z
         else:
@@ -153,7 +150,7 @@ class NeuralNetwork():
     #           from the backward pass.
     def backward(self, cache, X_train, y_train, alpha):
         # Starting at the loss function, calculate the partial
-        # derivatveof the loss function
+        # derivatve of the loss function
         cache["da" + str(self.numLayers)] = (-y_train/cache["a" + \
                      str(self.numLayers-1)])+((1-y_train)/(1-\
                      cache["a" + str(self.numLayers-1)]))
