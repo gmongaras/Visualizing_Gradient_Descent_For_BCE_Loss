@@ -53,20 +53,19 @@ class FullyConnected:
         z = np.dot(inputs.T, self.weights.T)
 
         # Add the biases to each node output
-        z = np.array(z)+self.biases
+        z = (np.array(z)+self.biases).T
         
         # Send each node value through the activation function if
         # the activation function is specified
         # Return the output and z value to be stored in the cache.
         if self.activation == "relu":
-            #return np.maximum(z.T, 0), z.T
-            return np.where(z.T > 0, z.T, z.T*0.05), z.T
+            return np.where(z > 0, z, z*0.05), z
         elif self.activation == "softmax":
-            return special.softmax(z, axis=1), z.T
+            return special.softmax(z.T, axis=1), z
         elif self.activation == "sigmoid":
-            return 1/(1 + np.exp(-1*z.T)), z.T
+            return 1/(1 + np.exp(-1*z)), z
         else:
-            return z.T, z.T
+            return z, z
 
 
 
