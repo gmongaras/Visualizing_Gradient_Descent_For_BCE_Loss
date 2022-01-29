@@ -294,7 +294,6 @@ def binaryCrossEntropy(yhat, y):
     
     # Change values of 1 which yaht and 0 within yhat_rev slightly
     # to avoid the loss from becoming nan or infinity.
-    yhat = np.where(yhat==1, yhat-0.0000001, yhat)
     yhat_rev = np.where(yhat_rev==0, yhat_rev+0.0000001, yhat_rev)
 
     # Compute the log terms
