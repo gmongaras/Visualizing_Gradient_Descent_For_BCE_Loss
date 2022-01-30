@@ -151,7 +151,7 @@ class NeuralNetwork():
     def backward(self, cache, X_train, y_train, alpha):
         # Starting at the loss function, calculate the partial
         # derivatve of the loss function
-        cache["da" + str(self.numLayers)] = (-y_train/cache["a" + \
+        cache["da" + str(self.numLayers-1)] = (-y_train/cache["a" +\
                      str(self.numLayers-1)])+((1-y_train)/(1-\
                      cache["a" + str(self.numLayers-1)]))
 
@@ -159,6 +159,18 @@ class NeuralNetwork():
         # and calculate the partial derivatives needed to find 
         # the gradeints for the weights and biases
         for i in reversed(range(0, self.numLayers)):
+            # Calculate the derivative of the activation function in
+            # terms of the loss function if the layer is a
+            # hidden layer
+            if i != self.numLayers-1:
+                cache["da" + str(i)] = np.sum(cache["dweights" + \
+                    str(i+1)], axis=-2).reshape(cache["z" + \
+                    str(i)].shape)
+
+
+
+            
+            
             # Calculate the derivative of the activation function
             # in terms of z
 
@@ -188,23 +200,9 @@ class NeuralNetwork():
 
 
             # Multiply the current dz value by the activation
-            # derivative from the proceeding layer if the layer
-            # is the last layer
-            if i == self.numLayers-1:
-                cache["dz" + str(i)] *= cache["da" + str(i+1)]
-            # If the layer is a hidden layer, multiply the current
-            # dx value by the proceeding layer's weight and
-            # bias derivatives to continue the chain rule.
-            else:
-                # Change the shape of dz to be (numNodes(i), 1, m)
-                cache["dz" + str(i)] = cache["dz" + str(i)].\
-                    reshape(self.layers[i].numNodes, \
-                    1, X_train.shape[0])
-                # Update dz to continue the chain rule.
-                cache["dz" + str(i)] = np.sum(cache["dweights" + \
-                    str(i+1)], axis=-2).reshape(cache["dz" + \
-                    str(i)].shape) * cache["dbiases" + str(i+1)] * \
-                    cache["dz" + str(i)]
+            # derivative from the proceeding layer to continue
+            # the chain rule
+            cache["dz" + str(i)] *= cache["da" + str(i)]
 
 
 
