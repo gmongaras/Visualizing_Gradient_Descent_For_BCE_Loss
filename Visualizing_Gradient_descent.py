@@ -198,12 +198,13 @@ class NeuralNetwork():
             else:
                 # Change the shape of dz to be (numNodes(i), 1, m)
                 cache["dz" + str(i)] = cache["dz" + str(i)].\
-                      reshape(cache["dz" + \
-                      str(i)].shape) * cache["dbiases" +\
-                      str(i+1)] * cache["dz" + str(i)]
+                    reshape(self.layers[i].numNodes, \
+                    1, X_train.shape[0])
                 # Update dz to continue the chain rule.
-                cache["dz" + str(i)] = np.sum(cache["dweights" +\
-                      str(i+1)], axis=-2)
+                cache["dz" + str(i)] = np.sum(cache["dweights" + \
+                    str(i+1)], axis=-2).reshape(cache["dz" + \
+                    str(i)].shape) * cache["dbiases" + str(i+1)] * \
+                    cache["dz" + str(i)]
 
 
 
