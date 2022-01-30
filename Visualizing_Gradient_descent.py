@@ -213,17 +213,6 @@ class NeuralNetwork():
             # values by the z value derivative to complete the
             # chain rule.
 
-
-            # Update the shapes of a and dz before taking the
-            # derivatives. The value do not change, this just
-            # changes the shape of the tensor.
-            cache["a" + str(i-1)] = cache["a" + str(i-1)].\
-                  reshape(cache["a" + str(i-1)].shape[0], 1,\
-                  X_train.shape[0])
-            cache["dz" + str(i)] = cache["dz" + str(i)].\
-                  reshape(self.layers[i].numNodes, 1,\
-                          X_train.shape[0])
-
             # Get the derivative of the weights. The derivative of
             # the weights is the corresponding input values
             # (a(i-1))*(1/m) dot the previous 
@@ -316,9 +305,9 @@ def main():
 
     # Create the neural network with:
     # - numInputs of size 2 (an x1 and x2 value)
-    # - an output layer of size 1 (for the classification (yhat))
-    # - 2 hidden layers
-    # - 16 nodes per layer
+    # - 3 layers
+    #   - 2 hidden layers of size 16
+    #   - an output layer of size 1 (for the classification (yhat))
     # - A relu activation function for each hidden layer
     # - A sigmoid activation functin for the output layer
     model = NeuralNetwork(2, 3, [16, 16, 1], ["relu", "relu", \
@@ -337,11 +326,10 @@ def main():
     loss_plot = plt.subplot(gs[0, :])
     real_plot = plt.subplot(gs[1, 0])
     pred_plot = plt.subplot(gs[1, 1])
-    #fig, (loss_plot, real_plot, pred_plot) = plt.subplots(3)
     plt.ion()
 
 
-    # For 100 iterations, feed forward the training data through
+    # For 20000 iterations, feed forward the training data through
     # the network and update the weights using the gradients
     # by going backwards.
     for i in range(0, 20000):
