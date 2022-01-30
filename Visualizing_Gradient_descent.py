@@ -169,7 +169,7 @@ class NeuralNetwork():
             # activation function (zi) is less than or equal to 0. 
             if self.layers[i].activation == "relu":
                 cache["dz" + str(i)] = np.where(cache["z" +\
-                                            str(i)] <= 0, -0.05, 1.)
+                                            str(i)] <= 0, 0.05, 1.)
             # If the activation function is sigmoid, then the
             # derivative is given by the following formula:
             # (phat(1-phat))
@@ -191,21 +191,19 @@ class NeuralNetwork():
             # derivative from the proceeding layer if the layer
             # is the last layer
             if i == self.numLayers-1:
-                cache["dz" + str(i)] = cache["da" + str(i+1)]*\
-                                       cache["dz" + str(i)]
+                cache["dz" + str(i)] *= cache["da" + str(i+1)]
             # If the layer is a hidden layer, multiply the current
             # dx value by the proceeding layer's weight and
             # bias derivatives to continue the chain rule.
             else:
                 # Change the shape of dz to be (numNodes(i), 1, m)
                 cache["dz" + str(i)] = cache["dz" + str(i)].\
-                        reshape(self.layers[i].numNodes, 1,\
-                        X_train.shape[0])
-                # Update dz to continue the chain rule.
-                cache["dz" + str(i)] = np.sum(cache["dweights" +\
-                      str(i+1)], axis=-2).reshape(cache["dz" + \
+                      reshape(cache["dz" + \
                       str(i)].shape) * cache["dbiases" +\
                       str(i+1)] * cache["dz" + str(i)]
+                # Update dz to continue the chain rule.
+                cache["dz" + str(i)] = np.sum(cache["dweights" +\
+                      str(i+1)], axis=-2)
 
 
 
